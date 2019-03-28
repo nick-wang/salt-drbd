@@ -281,3 +281,91 @@ def status(name='all'):
         ret.append(resource)
 
     return ret
+
+
+def createmd(name='all', force=True):
+    '''
+    Create the metadata of drbd resource.
+
+    :type name: str
+    :param name:
+        Resource name.
+
+    :type force: bool
+    :param force:
+        Force create metadata.
+
+    :return: result of creating metadata.
+    :rtype: bool
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' drbd.create
+        salt '*' drbd.create name=<resource name>
+    '''
+
+    ret = []
+
+    cmd = ['drbdadm', 'create-md']
+    cmd.append(name)
+
+    if force:
+        cmd.append("--force")
+
+    return __salt__['cmd.retcode'](cmd)
+
+
+def up(name='all'):
+    '''
+    Start of drbd resource.
+
+    :type name: str
+    :param name:
+        Resource name.
+
+    :return: result of start resource.
+    :rtype: bool
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' drbd.up
+        salt '*' drbd.up name=<resource name>
+    '''
+
+    ret = []
+
+    cmd = ['drbdadm', 'up']
+    cmd.append(name)
+
+    return __salt__['cmd.retcode'](cmd)
+
+
+def down(name='all'):
+    '''
+    Stop of drbd resource.
+
+    :type name: str
+    :param name:
+        Resource name.
+
+    :return: result of stop resource.
+    :rtype: bool
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' drbd.down
+        salt '*' drbd.down name=<resource name>
+    '''
+
+    ret = []
+
+    cmd = ['drbdadm', 'down']
+    cmd.append(name)
+
+    return __salt__['cmd.retcode'](cmd)
