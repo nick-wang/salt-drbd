@@ -5,12 +5,16 @@ DRBD administration module
 from __future__ import absolute_import, print_function, unicode_literals
 
 import logging
+
+from salt.exceptions import CommandExecutionError
 from salt.ext import six
 
 import salt.utils.json
 
 log = logging.getLogger(__name__)
 
+# Define the module's virtual name
+__virtualname__ = 'drbd'
 
 def _analyse_overview_field(content):
     '''
@@ -505,9 +509,7 @@ def setup_show(name='all', json=True):
         try:
             ret = salt.utils.json.loads(results['stdout'], strict=False)
         except ValueError:
-            ret = {'name': name,
-                   'result': False,
-                   'comment': 'Error happens when try to load the json output.'}
+            raise CommandExecutionError('Error happens when try to load the json output.', info=results)
 
     return ret
 
@@ -555,8 +557,6 @@ def setup_status(name='all', json=True):
         try:
             ret = salt.utils.json.loads(results['stdout'], strict=False)
         except ValueError:
-            ret = {'name': name,
-                   'result': False,
-                   'comment': 'Error happens when try to load the json output.'}
+            raise CommandExecutionError('Error happens when try to load the json output.', info=results)
 
     return ret
