@@ -7,6 +7,8 @@ from __future__ import absolute_import, print_function, unicode_literals
 import logging
 from salt.ext import six
 
+import salt.utils.json
+
 log = logging.getLogger(__name__)
 
 
@@ -312,7 +314,7 @@ def createmd(name='all', force=True):
     cmd.append(name)
 
     if force:
-        cmd.append("--force")
+        cmd.append('--force')
 
     return __salt__['cmd.retcode'](cmd)
 
@@ -369,3 +371,192 @@ def down(name='all'):
     cmd.append(name)
 
     return __salt__['cmd.retcode'](cmd)
+
+
+def primary(name='all', force=False):
+    '''
+    Promote the drbd resource.
+
+    :type name: str
+    :param name:
+        Resource name.
+
+    :type force: bool
+    :param force:
+        Force to promote the resource.
+        Needed in the initial sync.
+
+    :return: result of promote resource.
+    :rtype: bool
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' drbd.primary
+        salt '*' drbd.primary name=<resource name>
+    '''
+
+    ret = []
+
+    cmd = ['drbdadm', 'primary']
+    cmd.append(name)
+
+    if force:
+        cmd.append('--force')
+
+    return __salt__['cmd.retcode'](cmd)
+
+
+def secondary(name='all'):
+    '''
+    Demote the drbd resource.
+
+    :type name: str
+    :param name:
+        Resource name.
+
+    :return: result of demote resource.
+    :rtype: bool
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' drbd.secondary
+        salt '*' drbd.secondary name=<resource name>
+    '''
+
+    ret = []
+
+    cmd = ['drbdadm', 'secondary']
+    cmd.append(name)
+
+    return __salt__['cmd.retcode'](cmd)
+
+
+def adjust(name='all'):
+    '''
+    Adjust the drbd resource while running.
+
+    :type name: str
+    :param name:
+        Resource name.
+
+    :return: result of adjust resource.
+    :rtype: bool
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' drbd.adjust
+        salt '*' drbd.adjust name=<resource name>
+    '''
+
+    ret = []
+
+    cmd = ['drbdadm', 'adjust']
+    cmd.append(name)
+
+    return __salt__['cmd.retcode'](cmd)
+
+
+def setup_show(name='all', json=True):
+    '''
+    Show the drbd resource via drbdsetup directly.
+    Only support the json format so far.
+
+    :type name: str
+    :param name:
+        Resource name.
+
+    :type json: bool
+    :param json:
+        Use the json format.
+
+    :return: The resource configuration.
+    :rtype: dict
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' drbd.setup_show
+        salt '*' drbd.setup_show name=<resource name>
+    '''
+
+    ret = {'name': name,
+           'result': False,
+           'comment': ''}
+
+    cmd = ['drbdsetup', 'show']
+    cmd.append(name)
+
+    if json:
+        cmd.append('--json')
+
+        results = __salt__['cmd.run_all'](cmd)
+
+        if 'retcode' not in results or results['retcode'] != 0:
+            ret['comment'] = 'Error({}) happend when show resource via drbdsetup.'.format(results['retcode'])
+            return ret
+
+        try:
+            ret = salt.utils.json.loads(results['stdout'], strict=False)
+        except ValueError:
+            ret = {'name': name,
+                   'result': False,
+                   'comment': 'Error happens when try to load the json output.'}
+
+    return ret
+
+
+def setup_status(name='all', json=True):
+    '''
+    Show the drbd running status.
+    Only support enable the json format so far.
+
+    :type name: str
+    :param name:
+        Resource name.
+
+    :type json: bool
+    :param json:
+        Use the json format.
+
+    :return: The resource configuration.
+    :rtype: dict
+
+    CLI Example:
+
+    .. code-block:: bash
+
+        salt '*' drbd.setup_status
+        salt '*' drbd.setup_status name=<resource name>
+    '''
+
+    ret = {'name': name,
+           'result': False,
+           'comment': ''}
+
+    cmd = ['drbdsetup', 'status']
+    cmd.append(name)
+
+    if json:
+        cmd.append('--json')
+
+        results = __salt__['cmd.run_all'](cmd)
+
+        if 'retcode' not in results or results['retcode'] != 0:
+            ret['comment'] = 'Error({}) happend when show resource via drbdsetup.'.format(results['retcode'])
+            return ret
+
+        try:
+            ret = salt.utils.json.loads(results['stdout'], strict=False)
+        except ValueError:
+            ret = {'name': name,
+                   'result': False,
+                   'comment': 'Error happens when try to load the json output.'}
+
+    return ret
