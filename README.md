@@ -1,3 +1,6 @@
+# Version:
+0.0.1 (Bleedy middle state, not even a alpha version.)
+
 # DRBD salt module
 
 This module has been created to provision DRBD using salt.
