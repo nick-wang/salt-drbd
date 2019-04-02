@@ -243,14 +243,14 @@ lastpnodevolumes = None
 def status(name='all'):
     '''
     Using drbdadm to show status of the DRBD devices,
-    available in the latest drbd9.
+    available in the latest DRBD9.
     Support multiple nodes, multiple volumes.
 
     :type name: str
     :param name:
         Resource name.
 
-    :return: drbd status of resource.
+    :return: DRBD status of resource.
     :rtype: list(dict(res))
 
     CLI Example:
@@ -291,7 +291,7 @@ def status(name='all'):
 
 def createmd(name='all', force=True):
     '''
-    Create the metadata of drbd resource.
+    Create the metadata of DRBD resource.
 
     :type name: str
     :param name:
@@ -352,7 +352,7 @@ def up(name='all'):
 
 def down(name='all'):
     '''
-    Stop of drbd resource.
+    Stop of DRBD resource.
 
     :type name: str
     :param name:
@@ -379,7 +379,7 @@ def down(name='all'):
 
 def primary(name='all', force=False):
     '''
-    Promote the drbd resource.
+    Promote the DRBD resource.
 
     :type name: str
     :param name:
@@ -414,7 +414,7 @@ def primary(name='all', force=False):
 
 def secondary(name='all'):
     '''
-    Demote the drbd resource.
+    Demote the DRBD resource.
 
     :type name: str
     :param name:
@@ -441,7 +441,7 @@ def secondary(name='all'):
 
 def adjust(name='all'):
     '''
-    Adjust the drbd resource while running.
+    Adjust the DRBD resource while running.
 
     :type name: str
     :param name:
@@ -468,7 +468,7 @@ def adjust(name='all'):
 
 def setup_show(name='all', json=True):
     '''
-    Show the drbd resource via drbdsetup directly.
+    Show the DRBD resource via drbdsetup directly.
     Only support the json format so far.
 
     :type name: str
@@ -516,7 +516,7 @@ def setup_show(name='all', json=True):
 
 def setup_status(name='all', json=True):
     '''
-    Show the drbd running status.
+    Show the DRBD running status.
     Only support enable the json format so far.
 
     :type name: str
