@@ -158,36 +158,41 @@ def started(name):
         ret['comment'] = 'Resource {} not defined in your config.'.format(name)
         return ret
 
+    # Check already finished
     res = _get_res_status(name)
-
     if res:
         ret['result'] = True
         ret['comment'] = 'Resource {} has already started.'.format(name)
-        ret['changes']['name'] = name
         return ret
 
-
+    # Do nothing for test=True
     if __opts__['test']:
         ret['result'] = None
-        ret['comment'] = 'Resource {} will be started.'.format(name)
+        ret['comment'] = 'Resource {} would be started.'.format(name)
         ret['changes']['name'] = name
         return ret
 
-    return ret
+    try:
+        # Do real job
+        result = __salt__['drbd.up'](name = name)
+
+        if result:
+            ret['changes']['name'] = name
+            ret['comment'] = 'Error in start {}.'.format(name)
+            ret['result'] = False
+            return ret
+
+        ret['changes']['name'] = name
+        ret['comment'] = 'Resource {} is started.'.format(name)
+        ret['result'] = True
+        return ret
+
+    except exceptions.CommandExecutionError as err:
+        ret['comment'] = six.text_type(err)
+        return ret
 
 
-
-
-
-
-
-
-
-
-
-
-
-def drbd_stoped(name):
+def stopped(name):
     '''
     Make sure the DRBD resource is stopped.
 
@@ -195,7 +200,6 @@ def drbd_stoped(name):
         Name of the DRBD resource
 
     '''
-
     ret = {
         'name': name,
         'result': False,
@@ -203,13 +207,47 @@ def drbd_stoped(name):
         'comment': '',
     }
 
+    # Check resource exist
+    if _resource_not_exist(name):
+        ret['comment'] = 'Resource {} not defined in your config.'.format(name)
+        return ret
+
+    # Check already finished
+    res = _get_res_status(name)
+    if not res:
+        ret['result'] = True
+        ret['comment'] = 'Resource {} has already stopped.'.format(name)
+        return ret
+
+    # Do nothing for test=True
     if __opts__['test']:
         ret['result'] = None
-        ret['comment'] = 'Resource {} is stopped.'.format(name)
+        ret['comment'] = 'Resource {} would be stopped.'.format(name)
         ret['changes']['name'] = name
         return ret
 
-    return ret
+    try:
+        # Do real job
+        result = __salt__['drbd.down'](name = name)
+
+        if result:
+            ret['changes']['name'] = name
+            ret['comment'] = 'Error in stop {}.'.format(name)
+            ret['result'] = False
+            return ret
+
+        ret['changes']['name'] = name
+        ret['comment'] = 'Resource {} is stopped.'.format(name)
+        ret['result'] = True
+        return ret
+
+    except exceptions.CommandExecutionError as err:
+        ret['comment'] = six.text_type(err)
+        return ret
+
+
+
+
 
 
 def drbd_connected(name, peer):
