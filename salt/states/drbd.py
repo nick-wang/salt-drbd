@@ -125,7 +125,6 @@ def initialized(name, force = True):
             force = force)
 
         if result:
-            ret['changes']['name'] = name
             ret['comment'] = 'Error in initialize {}.'.format(name)
             ret['result'] = False
             return ret
@@ -180,7 +179,6 @@ def started(name):
         result = __salt__['drbd.up'](name = name)
 
         if result:
-            ret['changes']['name'] = name
             ret['comment'] = 'Error in start {}.'.format(name)
             ret['result'] = False
             return ret
@@ -234,7 +232,6 @@ def stopped(name):
         result = __salt__['drbd.down'](name = name)
 
         if result:
-            ret['changes']['name'] = name
             ret['comment'] = 'Error in stop {}.'.format(name)
             ret['result'] = False
             return ret
