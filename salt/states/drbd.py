@@ -76,12 +76,15 @@ def _get_resource_list():
     return ret
 
 
-def initialized(name):
+def initialized(name, force = True):
     '''
     Make sure the DRBD resource is initialized.
 
     name
         Name of the DRBD resource.
+
+    force
+        Force to recreate the metadata.
 
     '''
 
@@ -119,7 +122,7 @@ def initialized(name):
         # Do real job
         result = __salt__['drbd.createmd'](
             name = name,
-            force = True)
+            force = force)
 
         if result:
             ret['changes']['name'] = name
@@ -142,7 +145,7 @@ def started(name):
     Make sure the DRBD resource is started.
 
     name
-        Name of the DRBD resource
+        Name of the DRBD resource.
 
     '''
 
@@ -197,7 +200,7 @@ def stopped(name):
     Make sure the DRBD resource is stopped.
 
     name
-        Name of the DRBD resource
+        Name of the DRBD resource.
 
     '''
     ret = {
@@ -244,6 +247,128 @@ def stopped(name):
     except exceptions.CommandExecutionError as err:
         ret['comment'] = six.text_type(err)
         return ret
+
+
+def promoted(name, force = False):
+    '''
+    Make sure the DRBD resource is being primary.
+
+    name
+        Name of the DRBD resource.
+
+    force
+        Force to initial sync. Default: False
+
+    '''
+
+    ret = {
+        'name': name,
+        'result': False,
+        'changes': {},
+        'comment': '',
+    }
+
+    # Check resource exist
+    if _resource_not_exist(name):
+        ret['comment'] = 'Resource {} not defined in your config.'.format(name)
+        return ret
+
+    # Check resource is running
+    res = _get_res_status(name)
+    if res:
+        if res['local role'] == 'Primary':
+            ret['result'] = True
+            ret['comment'] = 'Resource {} has already been promoted.'.format(name)
+            return ret
+    else:
+        ret['comment'] = 'Resource {} is currently stop.'.format(name)
+        return ret
+
+    # Do nothing for test=True
+    if __opts__['test']:
+        ret['result'] = None
+        ret['comment'] = 'Resource {} would be promoted.'.format(name)
+        ret['changes']['name'] = name
+        return ret
+
+    try:
+        # Do real job
+        result = __salt__['drbd.primary'](
+            name = name,
+            force = force)
+
+        if result:
+            ret['comment'] = 'Error in promoting {}.'.format(name)
+            ret['result'] = False
+            return ret
+
+        ret['changes']['name'] = name
+        ret['comment'] = 'Resource {} is promoted.'.format(name)
+        ret['result'] = True
+        return ret
+
+    except exceptions.CommandExecutionError as err:
+        ret['comment'] = six.text_type(err)
+        return ret
+
+
+def demoted(name):
+    '''
+    Make sure the DRBD resource is being primary.
+
+    name
+        Name of the DRBD resource.
+
+    '''
+
+    ret = {
+        'name': name,
+        'result': False,
+        'changes': {},
+        'comment': '',
+    }
+
+    # Check resource exist
+    if _resource_not_exist(name):
+        ret['comment'] = 'Resource {} not defined in your config.'.format(name)
+        return ret
+
+    # Check resource is running
+    res = _get_res_status(name)
+    if res:
+        if res['local role'] == 'Secondary':
+            ret['result'] = True
+            ret['comment'] = 'Resource {} has already been demoted.'.format(name)
+            return ret
+    else:
+        ret['comment'] = 'Resource {} is currently stop.'.format(name)
+        return ret
+
+    # Do nothing for test=True
+    if __opts__['test']:
+        ret['result'] = None
+        ret['comment'] = 'Resource {} would be demoted.'.format(name)
+        ret['changes']['name'] = name
+        return ret
+
+    try:
+        # Do real job
+        result = __salt__['drbd.secondary']( name = name)
+
+        if result:
+            ret['comment'] = 'Error in demoting {}.'.format(name)
+            ret['result'] = False
+            return ret
+
+        ret['changes']['name'] = name
+        ret['comment'] = 'Resource {} is demoted.'.format(name)
+        ret['result'] = True
+        return ret
+
+    except exceptions.CommandExecutionError as err:
+        ret['comment'] = six.text_type(err)
+        return ret
+
 
 
 
