@@ -33,6 +33,7 @@ import logging
 from salt.exceptions import CommandExecutionError
 from salt.ext import six
 import os
+import time
 
 log = logging.getLogger(__name__)
 
@@ -137,7 +138,7 @@ def initialized(name, force = True):
         ret['result'] = True
         return ret
 
-    except exceptions.CommandExecutionError as err:
+    except CommandExecutionError as err:
         ret['comment'] = six.text_type(err)
         return ret
 
@@ -191,7 +192,7 @@ def started(name):
         ret['result'] = True
         return ret
 
-    except exceptions.CommandExecutionError as err:
+    except CommandExecutionError as err:
         ret['comment'] = six.text_type(err)
         return ret
 
@@ -244,7 +245,7 @@ def stopped(name):
         ret['result'] = True
         return ret
 
-    except exceptions.CommandExecutionError as err:
+    except CommandExecutionError as err:
         ret['comment'] = six.text_type(err)
         return ret
 
@@ -307,7 +308,7 @@ def promoted(name, force = False):
         ret['result'] = True
         return ret
 
-    except exceptions.CommandExecutionError as err:
+    except CommandExecutionError as err:
         ret['comment'] = six.text_type(err)
         return ret
 
@@ -353,7 +354,7 @@ def demoted(name):
 
     try:
         # Do real job
-        result = __salt__['drbd.secondary']( name = name)
+        result = __salt__['drbd.secondary'](name=name)
 
         if result:
             ret['comment'] = 'Error in demoting {}.'.format(name)
@@ -365,6 +366,87 @@ def demoted(name):
         ret['result'] = True
         return ret
 
-    except exceptions.CommandExecutionError as err:
+    except CommandExecutionError as err:
+        ret['comment'] = six.text_type(err)
+        return ret
+
+
+def wait_for_successful_synced(name, interval=30, timeout=600, **kwargs):
+    '''
+    Query a drbd resource until fully synced for all volumes.
+    If not synced, will fail after timeout.
+
+    name:
+        Resource name. Not support all.
+
+    interval:
+        Interval to check the sync status. Default: 30
+
+    timeout:
+        Timeout to wait progress. Default: 600
+
+    .. note::
+
+        All other arguements are passed to the module drbd.check_sync_status.
+    '''
+    ret = {
+        'name': name,
+        'result': False,
+        'changes': {},
+        'comment': '',
+    }
+
+    # Check resource exist
+    if _resource_not_exist(name):
+        ret['comment'] = 'Resource {} not defined in your config.'.format(name)
+        return ret
+
+    # Check resource is running
+    res = _get_res_status(name)
+    if res:
+        if __salt__['drbd.check_sync_status'](
+            name = name,
+            **kwargs):
+            ret['result'] = True
+            ret['comment'] = 'Resource {} has already been synced.'.format(name)
+            return ret
+    else:
+        ret['comment'] = 'Resource {} is currently stop.'.format(name)
+        return ret
+
+    # Do nothing for test=True
+    if __opts__['test']:
+        ret['result'] = None
+        ret['comment'] = 'Check {} whether be synced within {}.'.format(name, timeout)
+        ret['changes']['name'] = name
+        return ret
+
+    try:
+        # Do real job
+        starttime = time.time()
+
+        while True:
+
+            if time.time() > starttime + timeout:
+                log.error('Syncing of {} is not finished within {}s.'.format(
+                    name, timeout))
+                break
+
+            time.sleep(interval)
+
+            result = __salt__['drbd.check_sync_status'](
+                name = name,
+                **kwargs)
+
+            if result:
+                ret['changes']['name'] = name
+                ret['comment'] = 'Resource {} is synced.'.format(name)
+                ret['result'] = True
+                return ret
+
+        ret['comment'] = 'Resource {} is not synced within {}s.'.format(name, timeout)
+        return ret
+
+    except CommandExecutionError as err:
         ret['comment'] = six.text_type(err)
         return ret

@@ -10,7 +10,6 @@ from salt.exceptions import CommandExecutionError
 from salt.ext import six
 
 import salt.utils.json
-import time
 
 log = logging.getLogger(__name__)
 
@@ -159,6 +158,55 @@ def _line_parser(line):
     func = switch.get(section, _unknown_parser)
 
     func(line)
+
+
+def _is_local_all_uptodated(name):
+    '''
+    Check whether all local volumes are UpToDate.
+    '''
+
+    ret = False
+
+    res = status(name)
+    if not res:
+        return ret
+
+    # Since name is not all, res only have one element
+    for vol in res[0]['local volumes']:
+        if vol['disk'] != 'UpToDate':
+           return ret
+
+    ret = True
+    return ret
+
+def _is_peers_uptodated(name, peernode='all'):
+    '''
+    Check whether all volumes of peer node are UpToDate.
+
+    .. note::
+
+        If peernode is not match, will return None, same as False.
+    '''
+    ret = None
+
+    res = status(name)
+    if not res:
+        return ret
+
+    # Since name is not all, res only have one element
+    for node in res[0]['peer nodes']:
+        if peernode != 'all' and node['peernode name'] != peernode:
+            continue
+
+        for vol in node['peer volumes']:
+            if vol['peer-disk'] != 'UpToDate':
+                ret = False
+                return ret
+            else:
+                # At lease one volume is 'UpToDate'
+                ret = True
+
+    return ret
 
 
 def overview():
@@ -319,8 +367,6 @@ def createmd(name='all', force=True):
         salt '*' drbd.create name=<resource name>
     '''
 
-    ret = []
-
     cmd = ['drbdadm', 'create-md']
     cmd.append(name)
 
@@ -349,8 +395,6 @@ def up(name='all'):
         salt '*' drbd.up name=<resource name>
     '''
 
-    ret = []
-
     cmd = ['drbdadm', 'up']
     cmd.append(name)
 
@@ -375,8 +419,6 @@ def down(name='all'):
         salt '*' drbd.down
         salt '*' drbd.down name=<resource name>
     '''
-
-    ret = []
 
     cmd = ['drbdadm', 'down']
     cmd.append(name)
@@ -408,8 +450,6 @@ def primary(name='all', force=False):
         salt '*' drbd.primary name=<resource name>
     '''
 
-    ret = []
-
     cmd = ['drbdadm', 'primary']
     cmd.append(name)
 
@@ -437,8 +477,6 @@ def secondary(name='all'):
         salt '*' drbd.secondary
         salt '*' drbd.secondary name=<resource name>
     '''
-
-    ret = []
 
     cmd = ['drbdadm', 'secondary']
     cmd.append(name)
@@ -521,43 +559,6 @@ def setup_show(name='all', json=True):
     return ret
 
 
-def _is_local_all_uptodated(name):
-    ret = False
-
-    res = status(name)
-    if not res:
-        return ret
-
-    # Since name is not all, res only have one element
-    for vol in res[0]['local volumes']:
-        if vol['disk'] != 'UpToDate':
-           return ret
-
-    ret = True
-    return ret
-
-def _is_peers_uptodated(name, peernode='all'):
-    ret = False
-
-    res = status(name)
-    if not res:
-        return ret
-
-    # Since name is not all, res only have one element
-    for node in res[0]['peer nodes']:
-        if peernode != 'all' and node['peernode name'] != peernode:
-            continue
-
-        for vol in node['peer volumes']:
-            if vol['peer-disk'] != 'UpToDate':
-                ret = False
-                return ret
-            else:
-                # At lease one volume is 'UpToDate'
-                ret = True
-
-    return ret
-
 def setup_status(name='all', json=True):
     '''
     Show the DRBD running status.
@@ -606,7 +607,7 @@ def setup_status(name='all', json=True):
     return ret
 
 
-def wait_for_successful_sync(name, peernode='all', interval=30, timeout=600):
+def check_sync_status(name, peernode='all'):
     '''
     Query a drbd resource until fully synced for all volumes.
 
@@ -618,35 +619,14 @@ def wait_for_successful_sync(name, peernode='all', interval=30, timeout=600):
     :param peernode:
         Peer node name. Default: all
 
-    :type interval: int
-    :param interval:
-        Interval to check the sync status. Default: 30
-
-    :type timeout: int
-    :param timeout:
-        Timeout to wait progress. Default: 600
-
-    :return: result of resource sync.
-    :rtype: bool
-
     CLI Example:
 
     .. code-block:: bash
 
-        salt '*' drbd.wait_for_successful_sync <resource name> all 60 600
+        salt '*' drbd.check_sync_status <resource name> <peernode name>
     '''
-    starttime = time.time()
-
-    while True:
-        if _is_local_all_uptodated(name) and _is_peers_uptodated(
-            name, peernode='all'):
-            return True
-
-        if time.time() > starttime + timeout:
-            log.error('Syncing of {} to {} is not finished within {} seconds.'.format(
-                name, peernode, timeout))
-            break
-
-        time.sleep(interval)
+    if _is_local_all_uptodated(name) and _is_peers_uptodated(
+        name, peernode=peernode):
+        return True
 
     return False
