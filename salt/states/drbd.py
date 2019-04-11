@@ -57,6 +57,9 @@ def _get_res_status(name):
         # Resource not start will raise error.
         return None
 
+    if not result:
+        return None
+
     for r in result:
         if r['resource name'] == name:
             log.debug(r)
