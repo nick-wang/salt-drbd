@@ -1,5 +1,5 @@
 # Version:
-0.0.1 (Bleedy middle state, not even a alpha version.)
+0.1
 
 # DRBD salt module
 
