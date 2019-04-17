@@ -11,7 +11,7 @@ from salt.ext import six
 
 import salt.utils.json
 
-log = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 # Define the module's virtual name
 __virtualname__ = 'drbd'
@@ -145,7 +145,6 @@ def _line_parser(line):
     Call action for different lines
     '''
     section = _analyse_status_type(line)
-    fields = line.strip().split()
 
     switch = {
         '': _empty,
@@ -174,7 +173,7 @@ def _is_local_all_uptodated(name):
     # Since name is not all, res only have one element
     for vol in res[0]['local volumes']:
         if vol['disk'] != 'UpToDate':
-           return ret
+            return ret
 
     ret = True
     return ret
@@ -332,7 +331,7 @@ def status(name='all'):
 
     result = __salt__['cmd.run_all'](cmd)
     if result['retcode'] != 0:
-        log.info('No status due to {} ({}).'.format(result['stderr'], result['retcode']))
+        LOG.info('No status due to {} ({}).'.format(result['stderr'], result['retcode']))
         return None
 
     for line in result['stdout'].splitlines():
@@ -548,13 +547,15 @@ def setup_show(name='all', json=True):
         results = __salt__['cmd.run_all'](cmd)
 
         if 'retcode' not in results or results['retcode'] != 0:
-            ret['comment'] = 'Error({}) happend when show resource via drbdsetup.'.format(results['retcode'])
+            ret['comment'] = 'Error({}) happend when show resource via drbdsetup.'.format(
+                results['retcode'])
             return ret
 
         try:
             ret = salt.utils.json.loads(results['stdout'], strict=False)
         except ValueError:
-            raise CommandExecutionError('Error happens when try to load the json output.', info=results)
+            raise CommandExecutionError('Error happens when try to load the json output.',
+                                        info=results)
 
     return ret
 
@@ -596,13 +597,15 @@ def setup_status(name='all', json=True):
         results = __salt__['cmd.run_all'](cmd)
 
         if 'retcode' not in results or results['retcode'] != 0:
-            ret['comment'] = 'Error({}) happend when show resource via drbdsetup.'.format(results['retcode'])
+            ret['comment'] = 'Error({}) happend when show resource via drbdsetup.'.format(
+                results['retcode'])
             return ret
 
         try:
             ret = salt.utils.json.loads(results['stdout'], strict=False)
         except ValueError:
-            raise CommandExecutionError('Error happens when try to load the json output.', info=results)
+            raise CommandExecutionError('Error happens when try to load the json output.',
+                                        info=results)
 
     return ret
 
@@ -626,7 +629,7 @@ def check_sync_status(name, peernode='all'):
         salt '*' drbd.check_sync_status <resource name> <peernode name>
     '''
     if _is_local_all_uptodated(name) and _is_peers_uptodated(
-        name, peernode=peernode):
+            name, peernode=peernode):
         return True
 
     return False

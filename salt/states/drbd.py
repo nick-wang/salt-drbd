@@ -32,10 +32,9 @@ import logging
 
 from salt.exceptions import CommandExecutionError
 from salt.ext import six
-import os
 import time
 
-log = logging.getLogger(__name__)
+LOG = logging.getLogger(__name__)
 
 __virtualname__ = 'drbd'
 
@@ -54,17 +53,16 @@ def _get_res_status(name):
     try:
         result = __salt__['drbd.status'](name=name)
     except Exception:
-        # TODO: Fix in drbd module
         # Resource not start will raise error.
         return None
 
     if not result:
         return None
 
-    for r in result:
-        if r['resource name'] == name:
-            log.debug(r)
-            return r
+    for res in result:
+        if res['resource name'] == name:
+            LOG.debug(res)
+            return res
 
     return None
 
@@ -80,7 +78,7 @@ def _get_resource_list():
     return ret
 
 
-def initialized(name, force = True):
+def initialized(name, force=True):
     '''
     Make sure the DRBD resource is initialized.
 
@@ -125,8 +123,8 @@ def initialized(name, force = True):
     try:
         # Do real job
         result = __salt__['drbd.createmd'](
-            name = name,
-            force = force)
+            name=name,
+            force=force)
 
         if result:
             ret['comment'] = 'Error in initialize {}.'.format(name)
@@ -180,7 +178,7 @@ def started(name):
 
     try:
         # Do real job
-        result = __salt__['drbd.up'](name = name)
+        result = __salt__['drbd.up'](name=name)
 
         if result:
             ret['comment'] = 'Error in start {}.'.format(name)
@@ -233,7 +231,7 @@ def stopped(name):
 
     try:
         # Do real job
-        result = __salt__['drbd.down'](name = name)
+        result = __salt__['drbd.down'](name=name)
 
         if result:
             ret['comment'] = 'Error in stop {}.'.format(name)
@@ -250,7 +248,7 @@ def stopped(name):
         return ret
 
 
-def promoted(name, force = False):
+def promoted(name, force=False):
     '''
     Make sure the DRBD resource is being primary.
 
@@ -295,8 +293,8 @@ def promoted(name, force = False):
     try:
         # Do real job
         result = __salt__['drbd.primary'](
-            name = name,
-            force = force)
+            name=name,
+            force=force)
 
         if result:
             ret['comment'] = 'Error in promoting {}.'.format(name)
@@ -405,8 +403,8 @@ def wait_for_successful_synced(name, interval=30, timeout=600, **kwargs):
     res = _get_res_status(name)
     if res:
         if __salt__['drbd.check_sync_status'](
-            name = name,
-            **kwargs):
+                name=name,
+                **kwargs):
             ret['result'] = True
             ret['comment'] = 'Resource {} has already been synced.'.format(name)
             return ret
@@ -428,14 +426,14 @@ def wait_for_successful_synced(name, interval=30, timeout=600, **kwargs):
         while True:
 
             if time.time() > starttime + timeout:
-                log.error('Syncing of {} is not finished within {}s.'.format(
+                LOG.error('Syncing of {} is not finished within {}s.'.format(
                     name, timeout))
                 break
 
             time.sleep(interval)
 
             result = __salt__['drbd.check_sync_status'](
-                name = name,
+                name=name,
                 **kwargs)
 
             if result:
