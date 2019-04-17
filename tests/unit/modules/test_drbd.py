@@ -78,14 +78,19 @@ class DrbdTestCase(TestCase, LoaderModuleMockMixin):
                 'role': 'Secondary'}],
                 'resource name': 'single'}]
 
-        mock = MagicMock(return_value='''
+        fake = {}
+        fake['stdout'] = '''
 single role:Primary
   disk:UpToDate
   opensuse-node2 role:Secondary
     replication:SyncSource peer-disk:Inconsistent done:96.47
-''')
+'''
+        fake['stderr'] = ""
+        fake['retcode'] = 0
 
-        with patch.dict(drbd.__salt__, {'cmd.run': mock}):
+        mock = MagicMock(return_value=fake)
+
+        with patch.dict(drbd.__salt__, {'cmd.run_all': mock}):
             try:  # python2
                 self.assertItemsEqual(drbd.status(), ret)
             except AttributeError:  # python3
@@ -125,7 +130,8 @@ single role:Primary
                 'resource name': 'res'}
                ]
 
-        mock = MagicMock(return_value='''
+        fake = {}
+        fake['stdout'] = '''
 res role:Primary
   volume:0 disk:UpToDate
   volume:1 disk:UpToDate
@@ -146,8 +152,13 @@ test role:Primary
     volume:0 peer-disk:UpToDate
     volume:1 peer-disk:UpToDate
 
-''')
-        with patch.dict(drbd.__salt__, {'cmd.run': mock}):
+'''
+        fake['stderr'] = ""
+        fake['retcode'] = 0
+
+        mock = MagicMock(return_value=fake)
+
+        with patch.dict(drbd.__salt__, {'cmd.run_all': mock}):
             try:  # python2
                 self.assertItemsEqual(drbd.status(), ret)
             except AttributeError:  # python3
