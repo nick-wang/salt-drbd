@@ -243,7 +243,6 @@ test role:Primary
                                               'volume_nr': 0}]}],
                 'resource': 'beijing'}]
 
-
         fake = {}
         fake['stdout'] = '''
 [

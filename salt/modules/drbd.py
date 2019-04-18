@@ -16,6 +16,7 @@ LOG = logging.getLogger(__name__)
 # Define the module's virtual name
 __virtualname__ = 'drbd'
 
+
 def _analyse_overview_field(content):
     '''
     Split the field in drbd-overview
@@ -129,7 +130,6 @@ def _empty(dummy):
     '''
     Action of empty line of ``drbdadm status``
     '''
-    pass
 
 
 def _unknown_parser(line):
@@ -177,6 +177,7 @@ def _is_local_all_uptodated(name):
 
     ret = True
     return ret
+
 
 def _is_peers_uptodated(name, peernode='all'):
     '''
