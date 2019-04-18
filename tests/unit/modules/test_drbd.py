@@ -172,6 +172,7 @@ test role:Primary
 
         with patch.dict(drbd.__salt__, {'cmd.retcode': mock}):
             self.assertEqual(drbd.createmd(), True)
+            mock.assert_called_once_with(['drbdadm', 'create-md', 'all', '--force'])
 
     def test_up(self):
         '''
@@ -181,6 +182,7 @@ test role:Primary
 
         with patch.dict(drbd.__salt__, {'cmd.retcode': mock}):
             self.assertEqual(drbd.up(), True)
+            mock.assert_called_once_with(['drbdadm', 'up', 'all'])
 
     def test_down(self):
         '''
@@ -190,6 +192,7 @@ test role:Primary
 
         with patch.dict(drbd.__salt__, {'cmd.retcode': mock}):
             self.assertEqual(drbd.down(), True)
+            mock.assert_called_once_with(['drbdadm', 'down', 'all'])
 
     def test_primary(self):
         '''
@@ -200,12 +203,14 @@ test role:Primary
 
         with patch.dict(drbd.__salt__, {'cmd.retcode': mock}):
             self.assertEqual(drbd.primary(), True)
+            mock.assert_called_once_with(['drbdadm', 'primary', 'all'])
 
         # SubTest2:
         mock = MagicMock(return_value=True)
 
         with patch.dict(drbd.__salt__, {'cmd.retcode': mock}):
             self.assertEqual(drbd.primary(force=True), True)
+            mock.assert_called_once_with(['drbdadm', 'primary', 'all', '--force'])
 
     def test_secondary(self):
         '''
@@ -215,6 +220,7 @@ test role:Primary
 
         with patch.dict(drbd.__salt__, {'cmd.retcode': mock}):
             self.assertEqual(drbd.secondary(), True)
+            mock.assert_called_once_with(['drbdadm', 'secondary', 'all'])
 
     def test_adjust(self):
         '''
@@ -224,6 +230,7 @@ test role:Primary
 
         with patch.dict(drbd.__salt__, {'cmd.retcode': mock}):
             self.assertEqual(drbd.adjust(), True)
+            mock.assert_called_once_with(['drbdadm', 'adjust', 'all'])
 
     def test_setup_show(self):
         '''
@@ -296,6 +303,7 @@ test role:Primary
                 self.assertItemsEqual(drbd.setup_show(), ret)
             except AttributeError:  # python3
                 self.assertCountEqual(drbd.setup_show(), ret)
+            mock.assert_called_once_with(['drbdsetup', 'show', 'all', '--json'])
 
     def test_setup_status(self):
         '''
@@ -404,6 +412,7 @@ test role:Primary
                 self.assertItemsEqual(drbd.setup_status(), ret)
             except AttributeError:  # python3
                 self.assertCountEqual(drbd.setup_status(), ret)
+            mock.assert_called_once_with(['drbdsetup', 'status', 'all', '--json'])
 
     def test_check_sync_status(self):
         '''
@@ -431,3 +440,4 @@ beijing role:Primary
 
         with patch.dict(drbd.__salt__, {'cmd.run_all': mock}):
             self.assertEqual(drbd.check_sync_status('beijing'), True)
+            mock.assert_called_with(['drbdadm', 'status', 'beijing'])
