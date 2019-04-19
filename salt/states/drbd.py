@@ -426,7 +426,7 @@ def wait_for_successful_synced(name, interval=30, timeout=600, **kwargs):
         while True:
 
             if time.time() > starttime + timeout:
-                LOG.error('Syncing of {} is not finished within {}s.'.format(
+                LOG.error('Syncing of {} is not synced within {}s.'.format(
                     name, timeout))
                 break
 

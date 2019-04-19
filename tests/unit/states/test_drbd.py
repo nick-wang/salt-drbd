@@ -681,3 +681,166 @@ class DrbdStatesTestCase(TestCase, LoaderModuleMockMixin):
                 with patch.dict(drbd.__salt__, {'drbd.secondary': mock_secondary}):
                     self.assertDictEqual(drbd.demoted(RES_NAME), ret)
                     mock_secondary.assert_called_once_with(name=RES_NAME)
+
+    def test_wait_for_successful_synced(self):
+        '''
+        Test to check all volumes of a drbd resource is fully synced.
+        '''
+        # SubTest 1: Resource not exist
+        ret = {
+            'name': RES_NAME,
+            'result': False,
+            'changes': {},
+            'comment': 'Resource {} not defined in your config.'.format(RES_NAME),
+        }
+
+        mock = MagicMock(return_value=1)
+
+        with patch.dict(drbd.__salt__, {'cmd.retcode': mock}):
+            self.assertDictEqual(drbd.wait_for_successful_synced(RES_NAME), ret)
+            mock.assert_called_once_with('drbdadm dump {}'.format(RES_NAME))
+
+        # SubTest 2.1: Resource have already been synced
+        ret = {
+            'name': RES_NAME,
+            'result': True,
+            'changes': {},
+            'comment': 'Resource {} has already been synced.'.format(RES_NAME),
+        }
+
+        # A full resource example
+        # res_status = [{'resource name': RES_NAME,
+        #                'local role': 'Primary',
+        #                'local volumes': [{'disk': 'UpToDate'}],
+        #               'peer nodes': [{'peernode name': 'salt-node3',
+        #                                'role': 'Secondary',
+        #                                'peer volumes': [{'peer-disk': 'UpToDate'}]
+        #                               }
+        #                              ]
+        #               }
+        #              ]
+        res_status = [{'resource name': RES_NAME}]
+
+        mock = MagicMock(return_value=0)
+        mock_status = MagicMock(return_value=res_status)
+        mock_sync_status = MagicMock(return_value=1)
+
+        with patch.dict(drbd.__salt__, {'cmd.retcode': mock}):
+            with patch.dict(drbd.__salt__, {'drbd.status': mock_status}):
+                with patch.dict(drbd.__salt__, {'drbd.check_sync_status': mock_sync_status}):
+                    self.assertDictEqual(drbd.wait_for_successful_synced(RES_NAME), ret)
+
+        # SubTest 2.2: Resource is stopped
+        ret = {
+            'name': RES_NAME,
+            'result': False,
+            'changes': {},
+            'comment': 'Resource {} is currently stop.'.format(RES_NAME),
+        }
+
+        # A full resource example
+        # res_status = [{'resource name': RES_NAME,
+        #                'local role': 'Primary',
+        #                'local volumes': [{'disk': 'UpToDate'}],
+        #                'peer nodes': [{'peernode name': 'salt-node3',
+        #                                'role': 'Secondary',
+        #                                'peer volumes': [{'peer-disk': 'UpToDate'}]
+        #                               }
+        #                              ]
+        #               }
+        #              ]
+        res_status = None
+
+        mock = MagicMock(return_value=0)
+        mock_status = MagicMock(return_value=res_status)
+
+        with patch.dict(drbd.__salt__, {'cmd.retcode': mock}):
+            with patch.dict(drbd.__salt__, {'drbd.status': mock_status}):
+                self.assertDictEqual(drbd.wait_for_successful_synced(RES_NAME), ret)
+
+        # SubTest 3: The test option
+        ret = {
+            'name': RES_NAME,
+            'result': None,
+            'changes': {'name': RES_NAME},
+            'comment': 'Check {} whether be synced within {}.'.format(RES_NAME, 600),
+        }
+
+        # Fake res is enough, since mock drbd.check_sync_status
+        res_status = [{'resource name': RES_NAME}]
+
+        mock = MagicMock(return_value=0)
+        mock_status = MagicMock(return_value=res_status)
+        mock_sync_status = MagicMock(return_value=0)
+
+        with patch.dict(drbd.__opts__, {'test': True}):
+            with patch.dict(drbd.__salt__, {'cmd.retcode': mock}):
+                with patch.dict(drbd.__salt__, {'drbd.status': mock_status}):
+                    with patch.dict(drbd.__salt__, {'drbd.check_sync_status': mock_sync_status}):
+                        self.assertDictEqual(drbd.wait_for_successful_synced(RES_NAME), ret)
+                        mock_sync_status.assert_called_once_with(name=RES_NAME)
+
+        # SubTest 4: Not finish sync in time
+        ret = {
+            'name': RES_NAME,
+            'result': False,
+            'changes': {},
+            'comment': 'Resource {} is not synced within {}s.'.format(RES_NAME, 1),
+        }
+
+        res_status = [{'resource name': RES_NAME}]
+
+        mock = MagicMock(side_effect=[0, 1])
+        mock_status = MagicMock(return_value=res_status)
+        mock_sync_status = MagicMock(return_value=0)
+
+        with patch.dict(drbd.__salt__, {'cmd.retcode': mock}):
+            with patch.dict(drbd.__salt__, {'drbd.status': mock_status}):
+                with patch.dict(drbd.__salt__, {'drbd.check_sync_status': mock_sync_status}):
+                    self.assertDictEqual(drbd.wait_for_successful_synced(
+                                         RES_NAME, interval=0.3, timeout=1), ret)
+                    # Should call 5 times, when timeout is 1, interval is 0.3
+                    mock_sync_status.assert_called_with(name=RES_NAME)
+
+        # SubTest 5: Succeed in syncing in time
+        ret = {
+            'name': RES_NAME,
+            'result': True,
+            'changes': {'name': RES_NAME},
+            'comment': 'Resource {} is synced.'.format(RES_NAME),
+        }
+
+        res_status = [{'resource name': RES_NAME}]
+
+        mock = MagicMock(side_effect=[0, 1])
+        mock_status = MagicMock(return_value=res_status)
+        mock_sync_status = MagicMock(side_effect=[0, 0, 0, 1])
+
+        with patch.dict(drbd.__salt__, {'cmd.retcode': mock}):
+            with patch.dict(drbd.__salt__, {'drbd.status': mock_status}):
+                with patch.dict(drbd.__salt__, {'drbd.check_sync_status': mock_sync_status}):
+                    self.assertDictEqual(drbd.wait_for_successful_synced(
+                                         RES_NAME, interval=0.3, timeout=1), ret)
+                    mock_sync_status.assert_called_with(name=RES_NAME)
+
+        # SubTest 6: Command error
+        ret = {
+            'name': RES_NAME,
+            'result': False,
+            'changes': {},
+            'comment': 'drbd.check_sync_status: (drdbadm status {}) error.'.format(
+                       RES_NAME),
+        }
+
+        res_status = [{'resource name': RES_NAME}]
+
+        mock = MagicMock(side_effect=[0, 1])
+        mock_status = MagicMock(return_value=res_status)
+        mock_sync_status = MagicMock(side_effect=[0, 0, 0, exceptions.CommandExecutionError(
+            'drbd.check_sync_status: (drdbadm status {}) error.'.format(RES_NAME))])
+
+        with patch.dict(drbd.__salt__, {'cmd.retcode': mock}):
+            with patch.dict(drbd.__salt__, {'drbd.status': mock_status}):
+                with patch.dict(drbd.__salt__, {'drbd.check_sync_status': mock_sync_status}):
+                    self.assertDictEqual(drbd.wait_for_successful_synced(RES_NAME, interval=0.3, timeout=1), ret)
+                    mock_sync_status.assert_called_with(name=RES_NAME)
