@@ -313,7 +313,7 @@ def promoted(name, force=False):
 
 def demoted(name):
     '''
-    Make sure the DRBD resource is being primary.
+    Make sure the DRBD resource is being secondary.
 
     name
         Name of the DRBD resource.
