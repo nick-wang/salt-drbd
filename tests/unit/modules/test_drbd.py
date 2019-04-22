@@ -420,6 +420,7 @@ test role:Primary
         Test data is get from drbd-9.0.16/drbd-utils-9.6.0
         '''
 
+        # Test 1: Test all UpToDate
         fake = {}
         fake['stdout'] = '''
 beijing role:Primary
@@ -440,4 +441,50 @@ beijing role:Primary
 
         with patch.dict(drbd.__salt__, {'cmd.run_all': mock}):
             self.assertEqual(drbd.check_sync_status('beijing'), True)
+            mock.assert_called_with(['drbdadm', 'status', 'beijing'])
+
+        # Test 2: Test local is not UpToDate
+        fake = {}
+        fake['stdout'] = '''
+beijing role:Primary
+  volume:0 disk:UpToDate
+  volume:1 disk:Inconsistent
+  node2 role:Secondary
+    volume:0 peer-disk:UpToDate
+    volume:1 peer-disk:UpToDate
+  node3 role:Secondary
+    volume:0 peer-disk:UpToDate
+    volume:1 peer-disk:UpToDate
+
+'''
+        fake['stderr'] = ""
+        fake['retcode'] = 0
+
+        mock = MagicMock(return_value=fake)
+
+        with patch.dict(drbd.__salt__, {'cmd.run_all': mock}):
+            self.assertEqual(drbd.check_sync_status('beijing'), False)
+            mock.assert_called_with(['drbdadm', 'status', 'beijing'])
+
+        # Test 3: Test peer is not UpToDate
+        fake = {}
+        fake['stdout'] = '''
+beijing role:Primary
+  volume:0 disk:UpToDate
+  volume:1 disk:UpToDate
+  node2 role:Secondary
+    volume:0 peer-disk:Inconsistent
+    volume:1 peer-disk:UpToDate
+  node3 role:Secondary
+    volume:0 peer-disk:UpToDate
+    volume:1 peer-disk:UpToDate
+
+'''
+        fake['stderr'] = ""
+        fake['retcode'] = 0
+
+        mock = MagicMock(return_value=fake)
+
+        with patch.dict(drbd.__salt__, {'cmd.run_all': mock}):
+            self.assertEqual(drbd.check_sync_status('beijing'), False)
             mock.assert_called_with(['drbdadm', 'status', 'beijing'])
