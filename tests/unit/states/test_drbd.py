@@ -160,6 +160,33 @@ class DrbdStatesTestCase(TestCase, LoaderModuleMockMixin):
             with patch.dict(drbd.__salt__, {'drbd.status': mock_status}):
                 self.assertDictEqual(drbd.stopped(RES_NAME), ret)
 
+    def test_get_resource_list(self):
+        '''
+        Test drbd status(_get_res_status) return none.
+        '''
+        ret = ['beijing', 'tianjin', 'shanghai']
+
+        dump_info = '''
+common {
+}
+
+resource beijing {
+}
+
+resource tianjin {
+}
+
+resource shanghai {
+}
+'''
+        mock = MagicMock(return_value=dump_info)
+
+        with patch.dict(drbd.__salt__, {'cmd.run': mock}):
+            try:  # python2
+                self.assertItemsEqual(drbd._get_resource_list(), ret)
+            except AttributeError:  # python3
+                self.assertCountEqual(drbd._get_resource_list(), ret)
+
 
     def test_started(self):
         '''
