@@ -192,7 +192,6 @@ test role:Primary
             except AttributeError:  # python3
                 self.assertCountEqual(drbd.status(), ret)
 
-
         ret = {'Unknown parser': ' single role:Primary'}
         fake = {}
         fake['stdout'] = '''

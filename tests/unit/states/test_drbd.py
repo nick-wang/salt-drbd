@@ -187,7 +187,6 @@ resource shanghai {
             except AttributeError:  # python3
                 self.assertCountEqual(drbd._get_resource_list(), ret)
 
-
     def test_started(self):
         '''
         Test to check drbd resource is started.
