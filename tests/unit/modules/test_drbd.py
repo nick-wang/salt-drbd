@@ -66,6 +66,32 @@ class DrbdTestCase(TestCase, LoaderModuleMockMixin):
         with patch.dict(drbd.__salt__, {'cmd.run': mock}):
             self.assertDictEqual(drbd.overview(), ret)
 
+        ret = {'connection state': 'True',
+               'device': 'Stack',
+               'local disk state': 'UpToDate',
+               'local role': 'master',
+               'minor number': 'Salt',
+               'partner disk state': 'partner',
+               'partner role': 'master',
+               'synched': '6050',
+               'synchronisation: ': 'syncbar'}
+        mock = MagicMock(return_value='Salt:Stack True master(2*) \
+        UpToDate/partner syncbar None 60 50')
+        with patch.dict(drbd.__salt__, {'cmd.run': mock}):
+            self.assertDictEqual(drbd.overview(), ret)
+
+        ret = {'connection state': 'True',
+               'device': 'Stack',
+               'local disk state': 'UpToDate',
+               'local role': 'master',
+               'minor number': 'Salt',
+               'partner disk state': 'UpToDate',
+               'partner role': 'minion'}
+        mock = MagicMock(return_value='Salt:Stack True master/minion \
+        UpToDate(2*)')
+        with patch.dict(drbd.__salt__, {'cmd.run': mock}):
+            self.assertDictEqual(drbd.overview(), ret)
+
     def test_status(self):
         '''
         Test if it shows status of the DRBD resources via drbdadm
@@ -163,6 +189,20 @@ test role:Primary
                 self.assertItemsEqual(drbd.status(), ret)
             except AttributeError:  # python3
                 self.assertCountEqual(drbd.status(), ret)
+
+
+        ret = {'Unknown parser': ' single role:Primary'}
+        fake = {}
+        fake['stdout'] = '''
+ single role:Primary
+'''
+        fake['stderr'] = ""
+        fake['retcode'] = 0
+
+        mock = MagicMock(return_value=fake)
+
+        with patch.dict(drbd.__salt__, {'cmd.run_all': mock}):
+            self.assertDictEqual(drbd.status(), ret)
 
     def test_createmd(self):
         '''

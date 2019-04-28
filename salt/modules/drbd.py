@@ -71,8 +71,6 @@ def _analyse_status_type(line):
         if x in line:
             return ret[x]
 
-    return 'UNKNOWN'
-
 
 def _add_res(line):
     '''
