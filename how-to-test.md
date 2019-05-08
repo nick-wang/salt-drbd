@@ -18,7 +18,7 @@ eg:
 
 # In real:
 
-## ./test/run.sh in repo salt-shaptools
+## ./test/run.sh in repo salt-shaptools: will generate cov report - coverage.xml
 python3 tests/runtests.py -n unit.modules.test_drbd -n unit.states.test_drbd
 python2 tests/runtests.py -n unit.modules.test_drbd -n unit.states.test_drbd
 
